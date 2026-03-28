@@ -1,0 +1,37 @@
+:root {
+    /* Core Branding */
+    --accent-primary: #06b6d4;      /* Cyan 500 */
+    --accent-secondary: #0891b2;    /* Cyan 600 */
+    --accent-glow: rgba(6, 182, 212, 0.4);
+
+    /* Neutral Palette (Dark Mode Base) */
+    --bg-main: #020617;             /* Slate 950 */
+    --bg-card: rgba(30, 41, 59, 0.5); /* Slate 800 with glass opacity */
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    /* Typography */
+    --text-primary: #f8fafc;        /* Slate 50 */
+    --text-secondary: #94a3b8;      /* Slate 400 */
+    --font-heading: 'Inter', system-ui, sans-serif;
+    
+    /* Semantic Colors */
+    --success: #10b981;             /* Emerald 500 */
+    --danger: #ef4444;              /* Red 500 */
+    --warning: #f59e0b;             /* Amber 500 */
+    
+    /* Layout Tokens */
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Simple UI Overrides */
+body.simple-ui {
+    --bg-main: #ffffff;
+    --bg-card: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-primary: #0369a1;
+    --glass-border: #cbd5e1;
+    --radius-lg: 4px; /* Harder edges for clarity */
+}

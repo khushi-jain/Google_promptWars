@@ -13,17 +13,7 @@ const TRANSLATIONS = {
 };
 
 /**
- * Centralized Application State
- */
-const AppState = {
-    currentLanguage: 'en',
-    selectedFile: null,
-    isProcessing: false,
-    speechTimeout: null, // For debouncing
-};
-
-/**
- * DOM Elements Registry (Lazy Selection)
+ * DOM Elements Registry (Lazy Selection for test stability)
  */
 const EL = {
     statusText: () => document.querySelector('#processing p'),
@@ -45,7 +35,84 @@ const EL = {
     resMeta: () => document.getElementById('resMeta')
 };
 
-// --- 2. Functional Core ---
+/**
+ * Centralized Application State with Reactive Observer
+ * Automatically synchronizes state changes to the DOM where applicable.
+ */
+const AppState = new Proxy({
+    currentLanguage: 'en',
+    selectedFile: null,
+    isProcessing: false,
+    results: null,
+    speechTimeout: null,
+}, {
+    set(target, key, value) {
+        target[key] = value;
+        // Automatic UI Reactions
+        if (key === 'isProcessing') {
+            const proc = EL.processing();
+            const zone = EL.dropZone();
+            if (proc) proc.style.display = value ? 'flex' : 'none';
+            if (zone) zone.style.display = value ? 'none' : 'block';
+        }
+        if (key === 'currentLanguage') {
+            const btnAn = EL.btnAnalyze();
+            const btnVo = EL.btnVoice();
+            if(btnAn) btnAn.textContent = (TRANSLATIONS[value] || TRANSLATIONS['en']).analyze;
+            if(btnVo) btnVo.textContent = (TRANSLATIONS[value] || TRANSLATIONS['en']).voice;
+        }
+        return true;
+    }
+});
+
+/**
+ * High-efficiency File Utilities
+ */
+const FileUtil = {
+    /**
+     * Process evidence photos before transmission.
+     * Downsamples to max 1200px to save bandwidth in disaster zones.
+     */
+    async processImage(file) {
+        if (!file.type.startsWith('image/')) return file;
+        
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1200;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                }, 'image/jpeg', 0.82);
+            };
+        });
+    },
+
+    async toBase64(file) {
+        const reader = new FileReader();
+        return new Promise((resolve) => {
+            reader.onloadend = () => resolve({
+                data: reader.result.split(',')[1],
+                mimeType: file.type
+            });
+            reader.readAsDataURL(file);
+        });
+    }
+};
 
 /**
  * High-quality Speech Synthesis with debounce protection.
@@ -91,7 +158,7 @@ function startVoiceRecording() {
     
     recognition.onend = () => {
         const btn = EL.btnVoice();
-        btn.innerText = TRANSLATIONS[AppState.currentLanguage].voice;
+        btn.innerText = (TRANSLATIONS[AppState.currentLanguage] || TRANSLATIONS['en']).voice;
         btn.style.background = "";
     };
     
@@ -99,54 +166,35 @@ function startVoiceRecording() {
 }
 
 /**
- * Utilities for file processing.
- */
-const FileUtil = {
-    async toBase64(file) {
-        const reader = new FileReader();
-        return new Promise((resolve) => {
-            reader.onloadend = () => resolve({
-                data: reader.result.split(',')[1],
-                mimeType: file.type
-            });
-            reader.readAsDataURL(file);
-        });
-    }
-};
-
-/**
- * MAIN EXECUTION UNIT: Lighthouse Bridge Logic
- * @param {string} manualText - Text input from voice or keyboard.
+ * Unified Intelligent Bridge Execution
+ * Orhcestrates GCP simulation and Gemini reasoning.
  */
 async function runBridge(manualText = "") {
     if (AppState.isProcessing) return;
     AppState.isProcessing = true;
 
-    // UI Feedback Loop
-    const proc = EL.processing();
-    const zone = EL.dropZone();
+    // Reset views
     const resV = EL.resultView();
-    
-    proc.style.display = 'flex';
-    zone.style.display = 'none';
-    resV.style.display = 'none';
+    if (resV) resV.style.display = 'none';
     EL.loadStatus().textContent = TRANSLATIONS[AppState.currentLanguage].load;
 
     try {
         let filePayload = null;
         
         if (AppState.selectedFile) {
-            EL.statusText().textContent = "[Cloud Integration] Synchronizing sensors...";
+            EL.statusText().textContent = "[Optimization] Downsampling evidence for low-bandwidth...";
+            const optimizedFile = await FileUtil.processImage(AppState.selectedFile);
             
-            // GCP Simulation Trace (grading-compliant architecture)
-            const gsUri = await GCP.uploadToCloudStorage(AppState.selectedFile);
-            if (AppState.selectedFile.type.startsWith('image/')) await GCP.runCloudVision(gsUri);
-            else if (AppState.selectedFile.type.startsWith('audio/')) await GCP.runSpeechToText(gsUri);
+            EL.statusText().textContent = "[Cloud Integration] Synchronizing sensors...";
+            const gsUri = await GCP.uploadToCloudStorage(optimizedFile);
+            
+            if (optimizedFile.type.startsWith('image/')) await GCP.runCloudVision(gsUri);
+            else if (optimizedFile.type.startsWith('audio/')) await GCP.runSpeechToText(gsUri);
             
             await GCP.publishToPubSub('incident-intake-topic', { gsUri });
             await GCP.queryBigQuery('historic_incident_data', { radius: "5km" });
 
-            filePayload = await FileUtil.toBase64(AppState.selectedFile);
+            filePayload = await FileUtil.toBase64(optimizedFile);
         }
 
         await GCP.analyzeWithVertexAI();
@@ -170,8 +218,8 @@ async function runBridge(manualText = "") {
             throw new Error(err.error || "Intelligence Pipeline Fault.");
         }
 
-        const data = await response.json();
-        updateUI(data);
+        AppState.results = await response.json();
+        updateUI(AppState.results);
 
     } catch (err) {
         console.error("Lighthouse_Fault:", err);
@@ -396,4 +444,4 @@ const SIMULATION_DATA = {
     }
 };
 
-export { runBridge, updateUI, resetUI, init, FileUtil };
+export { runBridge, updateUI, resetUI, init, FileUtil, AppState };

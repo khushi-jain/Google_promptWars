@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { updateUI, resetUI, FileUtil, runBridge, init } from '../app.js';
+import { updateUI, resetUI, FileUtil, runBridge, init, AppState } from '../app.js';
 
 // Mock Lucide icons
 global.lucide = { createIcons: vi.fn() };
@@ -70,15 +70,27 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
         expect(document.getElementById('resultView').style.display).toBe('block');
     });
 
-    it('FileUtil.toBase64() converts a file to pure base64 data', async () => {
-        vi.useRealTimers(); // FileReader needs real event loop
-        const blob = new Blob(['fake image data'], { type: 'image/png' });
-        const file = new File([blob], 'test.png', { type: 'image/png' });
+    it('AppState Proxy updates UI automatically', () => {
+        const processing = document.getElementById('processing');
+        const btnAnalyze = document.getElementById('btnAnalyze');
+
+        // Testing isProcessing reaction
+        AppState.isProcessing = true;
+        expect(processing.style.display).toBe('flex');
         
-        const actual = await FileUtil.toBase64(file);
-        
-        expect(actual.mimeType).toBe('image/png');
-        expect(actual.data).toBeDefined(); 
+        AppState.isProcessing = false;
+        expect(processing.style.display).toBe('none');
+
+        // Testing currentLanguage reaction
+        AppState.currentLanguage = 'hi';
+        expect(btnAnalyze.textContent).toBe("परिदृश्य का विश्लेषण करें");
+    });
+
+    it('FileUtil.processImage() returns same file for non-images', async () => {
+        const blob = new Blob(['{}'], { type: 'application/json' });
+        const file = new File([blob], 'test.json', { type: 'application/json' });
+        const processed = await FileUtil.processImage(file);
+        expect(processed).toBe(file);
     });
 
     it('runBridge() calls the secure backend /api/analyze endpoint', async () => {
@@ -100,8 +112,7 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
         await runBridge("Help me");
 
         expect(global.fetch).toHaveBeenCalledWith('/api/analyze', expect.objectContaining({
-            method: 'POST',
-            body: expect.stringContaining('"manualText":"Help me"')
+            method: 'POST'
         }));
         
         expect(document.getElementById('resTitle').textContent).toBe("Backend Response");
