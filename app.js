@@ -7,15 +7,31 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 
 // 1. Initial Setup
-const API_KEY = "AIzaSyCyPw7_XybVhWBycHmnaV5XBYPyKl9Gsdw";
-const genAI = new GoogleGenerativeAI(API_KEY);
+let genAI = null;
 
 const statusText = document.querySelector('#processing p');
 let activeIntelligence = null;
 
+async function getGenAI() {
+    if (genAI) return genAI;
+    try {
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        if (data.apiKey) {
+            genAI = new GoogleGenerativeAI(data.apiKey);
+            return genAI;
+        }
+    } catch (e) {
+        console.warn("Could not fetch API key from server. Using fallback or running locally incorrectly.");
+    }
+    throw new Error("GEMINI_API_KEY env variable is missing on the server.");
+}
+
 // The "Discovery" Engine: Handshakes with Google's model clusters
 async function discoverIntelligence() {
     if (activeIntelligence) return activeIntelligence;
+    
+    const aiInstance = await getGenAI();
 
     // 2026 Available Models (1.5 models have been deprecated!)
     const candidateModels = [
@@ -30,7 +46,7 @@ async function discoverIntelligence() {
     for (const name of candidateModels) {
         try {
             console.log(`📡 Linking with ${name}...`);
-            const model = genAI.getGenerativeModel({ model: name });
+            const model = aiInstance.getGenerativeModel({ model: name });
             
             // Critical Connectivity Test
             await model.generateContent("ping");
