@@ -31,7 +31,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSy_MOCK_
 // The single, secured execution pipeline for Lighthouse inference.
 app.post('/api/analyze', apiLimiter, async (req, res) => {
     try {
-        const { manualText, fileData, mimeType } = req.body;
+        const { manualText, fileData, mimeType, lang } = req.body;
+        const targetLang = lang || 'en';
         
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
@@ -45,17 +46,19 @@ app.post('/api/analyze', apiLimiter, async (req, res) => {
             });
         }
 
-        const prompt = `Act as the Lighthouse Bridge. Your STRICT objective is to take unstructured, messy, real-world inputs (like voice, traffic, weather, news, photos, medical history) and instantly convert them into structured, verified, life-saving actions.
-        Output a valid JSON object matching this schema exactly:
+        const prompt = `Act as the Lighthouse Bridge. AI Objective: Structured, verified, life-saving outcomes from messy data.
+        Language Requirements: Respond ENTIRELY in ${targetLang}.
+        Accessibility Requirements: Provide a "summary" for screen readers and "aria_label" for each action.
+        Output valid JSON matching this schema exactly:
         {
             "title": "Clear Action Summary",
-            "inputType": "Source classification (Voice/Traffic/Weather/News/Photo/Medical)",
+            "inputType": "Source classification",
             "verification_status": "Verified: High Confidence",
             "reasoning": "Extraction detail from the messy data",
             "priority": "Critical/High/Normal",
             "badgeClass": "badge-urgent/badge-ready",
             "module": "medical/roadside/women/traffic/disaster/civic",
-            "actions": [{"icon": "lucide_name", "label": "label", "desc": "detail"}]
+            "actions": [{"icon": "lucide_name", "label": "label", "desc": "detail", "aria_label": "Detailed descriptive label for blind users"}]
         }`;
 
         const result = await model.generateContent([prompt, ...parts]);

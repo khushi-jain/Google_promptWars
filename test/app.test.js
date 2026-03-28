@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { updateUI, resetUI, fileToBase64, runBridge } from '../app.js';
+import { updateUI, resetUI, fileToBase64, runBridge, init } from '../app.js';
 
 // Mock Lucide icons
 global.lucide = { createIcons: vi.fn() };
@@ -15,12 +15,22 @@ vi.mock('../gcp-orchestrator.js', () => ({
     routeWithMapsAPI: vi.fn(() => Promise.resolve())
 }));
 
+import fs from 'fs';
+import path from 'path';
+
 describe('Lighthouse Bridge App (Secure Architecture)', () => {
     
     beforeEach(() => {
         vi.clearAllMocks();
+        
+        // Refresh DOM from original index.html
+        const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8');
+        document.documentElement.innerHTML = html;
+
         // Setup simple fetch mock
         global.fetch = vi.fn();
+        // Re-init listeners for each test's fresh JSDOM
+        init();
     });
 
     it('resetUI() hides processing and result views, and resets state', () => {
@@ -92,5 +102,51 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
         }));
         
         expect(document.getElementById('resTitle').textContent).toBe("Backend Response");
+    });
+
+    it('updateUI() populates srSummary and triggers speech synthesis for blind support', () => {
+        const mockSpeech = vi.fn();
+        global.speechSynthesis = {
+            speak: mockSpeech,
+            cancel: vi.fn(),
+            getVoices: vi.fn(() => [])
+        };
+        global.SpeechSynthesisUtterance = vi.fn();
+
+        const mockData = {
+            title: "Emergency Found",
+            reasoning: "Reasoning detail for screen reader.",
+            priority: "High",
+            module: "medical",
+            actions: []
+        };
+        
+        updateUI(mockData);
+        
+        const srSummary = document.getElementById('srSummary');
+        expect(srSummary.textContent).toContain("Emergency Found");
+        expect(srSummary.textContent).toContain("Reasoning detail");
+        expect(mockSpeech).toHaveBeenCalled();
+    });
+
+    it('language selector updates button text', () => {
+        const langSelect = document.getElementById('langSelect');
+        const btnAnalyze = document.getElementById('btnAnalyze');
+        
+        langSelect.value = 'hi';
+        langSelect.dispatchEvent(new Event('change'));
+        
+        expect(btnAnalyze.textContent).toBe("परिदृश्य का विश्लेषण करें");
+    });
+
+    it('Simple UI toggle updates body class', () => {
+        const toggleBtn = document.getElementById('toggleSimpleUI');
+        
+        toggleBtn.click();
+        expect(document.body.classList.contains('simple-ui')).toBe(true);
+        expect(toggleBtn.getAttribute('aria-pressed')).toBe('true');
+        
+        toggleBtn.click();
+        expect(document.body.classList.contains('simple-ui')).toBe(false);
     });
 });

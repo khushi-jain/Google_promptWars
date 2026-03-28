@@ -1,0 +1,23 @@
+const CACHE_NAME = 'lighthouse-v2';
+const ASSETS = [
+  './',
+  './index.html',
+  './styles.css',
+  './app.js',
+  './gcp-orchestrator.js',
+  './manifest.json'
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+});
+
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => {
+      return res || fetch(e.request);
+    })
+  );
+});
