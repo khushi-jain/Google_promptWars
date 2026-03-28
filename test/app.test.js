@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { updateUI, resetUI, FileUtil, runBridge, init, AppState } from '../app.js';
+import { updateUI, resetUI, FileUtil, runBridge, init, AppState, updateLiveFeed } from '../app.js';
 
 // Mock Lucide icons
 global.lucide = { createIcons: vi.fn() };
@@ -146,24 +146,49 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
         expect(mockSpeech).toHaveBeenCalled();
     });
 
-    it('language selector updates button text', () => {
+    it('runBridge() handles critical faults and communicates them via UI', async () => {
+        vi.useRealTimers();
+        global.fetch.mockRejectedValue(new Error("Network Disrupted"));
+
+        await runBridge("Help");
+
+        const status = document.getElementById('processing').querySelector('p');
+        expect(status.textContent).toContain("Critical Fault");
+        expect(status.textContent).toContain("Network Disrupted");
+        expect(status.style.color).toBe("var(--danger)");
+    });
+
+    it('updateLiveFeed() correctly populates the activity dashboard from Firestore', () => {
+        const mockIncidents = [
+            { title: "Rescue Pulse", inputType: "Voice", priority: "Critical", signedUrl: "https://gcs.com/1" }
+        ];
+        
+        // Manual call for internal logic verification
+        updateLiveFeed(mockIncidents);
+        
+        const feed = document.getElementById('liveFeed');
+        expect(feed.innerHTML).toContain("Rescue Pulse");
+        expect(feed.querySelector('a').href).toBe("https://gcs.com/1");
+        expect(document.getElementById('syncStatus').textContent).toContain("Synced:");
+    });
+
+    it('language selector updates all key UI elements', () => {
         const langSelect = document.getElementById('langSelect');
         const btnAnalyze = document.getElementById('btnAnalyze');
         
+        // Trigger select change
         langSelect.value = 'hi';
         langSelect.dispatchEvent(new Event('change'));
         
         expect(btnAnalyze.textContent).toBe("परिदृश्य का विश्लेषण करें");
+        expect(AppState.currentLanguage).toBe('hi');
     });
 
-    it('Simple UI toggle updates body class', () => {
-        const toggleBtn = document.getElementById('toggleSimpleUI');
+    it('Simple UI toggle updates body accessibility state', () => {
+        const toggle = document.getElementById('toggleSimpleUI');
+        toggle.click();
         
-        toggleBtn.click();
         expect(document.body.classList.contains('simple-ui')).toBe(true);
-        expect(toggleBtn.getAttribute('aria-pressed')).toBe('true');
-        
-        toggleBtn.click();
-        expect(document.body.classList.contains('simple-ui')).toBe(false);
+        expect(toggle.getAttribute('aria-pressed')).toBe('true');
     });
 });

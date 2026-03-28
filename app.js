@@ -495,4 +495,4 @@ const SIMULATION_DATA = {
     }
 };
 
-export { runBridge, updateUI, resetUI, init, FileUtil, AppState };
+export { runBridge, updateUI, resetUI, init, FileUtil, AppState, updateLiveFeed };

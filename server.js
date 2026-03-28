@@ -109,6 +109,11 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Lighthouse Bridge live on port ${PORT} (Resilient Mode)`);
-});
+// Auto-start only if run directly
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`Lighthouse Bridge: Operational on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
