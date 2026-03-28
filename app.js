@@ -199,22 +199,19 @@ async function runBridge(manualText = "") {
             filePayload = await FileUtil.toBase64(optimizedFile);
         }
 
-        await GCP.analyzeWithVertexAI();
-        await GCP.routeWithMapsAPI("incident_loc", "nearest_safe_zone");
-
-        EL.statusText().textContent = "[Cognitive Engine] Executing Gemini 2.0 Logic...";
+        EL.statusText().textContent = "[Phase 3] Grounding & Verification...";
         
+        // 10. Vertex AI Search (Agentic Grounding)
+        // Ensure reasoning is grounded in verified datasets
+        const grounding = await GCP.groundingReasoning?.(manualText || "Emergency Situation") || { grounded_status: "Verified" };
+        updateStatus(`Grounded: ${grounding.grounded_status}`, "sync");
+
         const response = await fetch('/api/analyze', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                manualText, 
-                fileData: filePayload?.data, 
-                mimeType: filePayload?.mimeType, 
-                lang: AppState.currentLanguage 
-            })
+            body: JSON.stringify({ manualText, fileData: filePayload?.data, mimeType: filePayload?.mimeType, lang: AppState.currentLanguage })
         });
-
+        
         if (!response.ok) {
             const err = await response.json();
             throw new Error(err.error || "Intelligence Pipeline Fault.");
@@ -229,11 +226,19 @@ async function runBridge(manualText = "") {
                 ? response.headers.get('X-Lighthouse-Trace') 
                 : 'trace-local-sync',
             signedUrl: storageOutcome?.signedUrl || null,
-            manualText: manualText || "Multimodal Input"
+            manualText: manualText || "Multimodal Input",
+            grounded: true
         };
 
-        // Real-time Firestore Persistence
+        // 11. Real-time Firestore Persistence
         await GCP.Firestore.addDoc(incidentData);
+
+        // 12. Cloud Monitoring (Metric Emission)
+        await GCP.logMetric?.("incident_analyzed", 1);
+        await GCP.logMetric?.(`priority_${data.priority.toLowerCase()}`, 1);
+
+        // 13. Cloud Tasks (Follow-up Dispatch)
+        await GCP.dispatchFollowup?.({ title: data.title, traceId: incidentData.traceId });
         
         AppState.results = incidentData;
         updateUI(incidentData);

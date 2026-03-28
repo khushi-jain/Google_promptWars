@@ -185,6 +185,38 @@ header {
     background: rgba(255, 255, 255, 0.05);
 }
 
+/* --- 13-Service Cloud Health Dashboard --- */
+.cloud-foot {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+
+.cloud-badge-group {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.cloud-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    display: inline-block;
+    margin-right: 0.4rem;
+}
+
+.cloud-service-count {
+    font-weight: 600;
+    color: var(--accent);
+}
+
 /* Results Display */
 .result-container {
     animation: slideUp 0.5s ease-out;
