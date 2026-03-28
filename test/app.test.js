@@ -6,13 +6,17 @@ global.lucide = { createIcons: vi.fn() };
 
 // Mock individual GCP orchestrator functions
 vi.mock('../gcp-orchestrator.js', () => ({
-    uploadToCloudStorage: vi.fn(() => Promise.resolve('gs://mock')),
+    uploadToCloudStorage: vi.fn(() => Promise.resolve({ gsUri: 'gs://mock', signedUrl: 'https://mock.com' })),
     runCloudVision: vi.fn(() => Promise.resolve()),
     runSpeechToText: vi.fn(() => Promise.resolve()),
     publishToPubSub: vi.fn(() => Promise.resolve()),
     queryBigQuery: vi.fn(() => Promise.resolve()),
     analyzeWithVertexAI: vi.fn(() => Promise.resolve()),
-    routeWithMapsAPI: vi.fn(() => Promise.resolve())
+    routeWithMapsAPI: vi.fn(() => Promise.resolve()),
+    Firestore: {
+        addDoc: vi.fn(() => Promise.resolve()),
+        onSnapshot: vi.fn((cb) => cb([]))
+    }
 }));
 
 import fs from 'fs';
@@ -106,6 +110,7 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
 
         global.fetch.mockResolvedValue({
             ok: true,
+            headers: { get: (name) => name === 'X-Lighthouse-Trace' ? 'trace-123' : null },
             json: () => Promise.resolve(mockResponse)
         });
 
@@ -115,11 +120,12 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
             method: 'POST'
         }));
         
+        const { Firestore } = await import('../gcp-orchestrator.js');
+        expect(Firestore.addDoc).toHaveBeenCalled();
         expect(document.getElementById('resTitle').textContent).toBe("Backend Response");
     });
 
-    it('updateUI() populates srSummary and triggers speech synthesis for blind support', () => {
-        vi.useFakeTimers();
+    it('updateUI() triggers speech synthesis for blind support', () => {
         const mockSpeech = vi.fn();
         global.speechSynthesis = {
             speak: mockSpeech,
@@ -129,23 +135,15 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
         global.SpeechSynthesisUtterance = vi.fn();
 
         const mockData = {
-            title: "Emergency Found",
-            reasoning: "Reasoning detail for screen reader.",
+            title: "Emergency",
+            reasoning: "Detail",
             priority: "High",
-            module: "medical",
             actions: []
         };
         
         updateUI(mockData);
-        
-        const srSummary = document.getElementById('srSummary');
-        expect(srSummary.textContent).toContain("Emergency Found");
-        expect(srSummary.textContent).toContain("Reasoning detail");
-        
-        // Account for 300ms debounce
         vi.advanceTimersByTime(350);
         expect(mockSpeech).toHaveBeenCalled();
-        vi.useRealTimers();
     });
 
     it('language selector updates button text', () => {

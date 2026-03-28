@@ -90,6 +90,19 @@
 
             <!-- Main Workspace -->
             <section class="main-view" aria-label="Workspace">
+                <!-- Live Activity Feed (Firestore Sync) -->
+                <div class="glass-card" style="margin-bottom: 2rem; padding: 1.5rem;" aria-labelledby="feed-title">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 id="feed-title" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--accent-primary);">
+                            <span class="pulse-dot"></span> LIVE BRIDGE ACTIVITY
+                        </h4>
+                        <small id="syncStatus" style="color: var(--text-secondary); font-size: 0.7rem;">Synced: Just now</small>
+                    </div>
+                    <div id="liveFeed" class="feed-container" role="log" aria-live="polite">
+                        <p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; padding: 1rem;">Waiting for incident pulses...</p>
+                    </div>
+                </div>
+
                 <!-- Input Zone -->
                 <div class="glass-card input-zone" id="dropZone" aria-label="Drop zone for medical, voice, or image evidence" role="region">
                     <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--accent-primary);" aria-hidden="true">

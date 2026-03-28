@@ -180,14 +180,16 @@ async function runBridge(manualText = "") {
 
     try {
         let filePayload = null;
+        let storageOutcome = null;
         
         if (AppState.selectedFile) {
             EL.statusText().textContent = "[Optimization] Downsampling evidence for low-bandwidth...";
             const optimizedFile = await FileUtil.processImage(AppState.selectedFile);
             
             EL.statusText().textContent = "[Cloud Integration] Synchronizing sensors...";
-            const gsUri = await GCP.uploadToCloudStorage(optimizedFile);
-            
+            storageOutcome = await GCP.uploadToCloudStorage(optimizedFile);
+            const { gsUri } = storageOutcome;
+
             if (optimizedFile.type.startsWith('image/')) await GCP.runCloudVision(gsUri);
             else if (optimizedFile.type.startsWith('audio/')) await GCP.runSpeechToText(gsUri);
             
@@ -218,8 +220,23 @@ async function runBridge(manualText = "") {
             throw new Error(err.error || "Intelligence Pipeline Fault.");
         }
 
-        AppState.results = await response.json();
-        updateUI(AppState.results);
+        const data = await response.json();
+        
+        // --- NEW: Deep Service Persistance ---
+        const incidentData = {
+            ...data,
+            traceId: (response.headers && typeof response.headers.get === 'function') 
+                ? response.headers.get('X-Lighthouse-Trace') 
+                : 'trace-local-sync',
+            signedUrl: storageOutcome?.signedUrl || null,
+            manualText: manualText || "Multimodal Input"
+        };
+
+        // Real-time Firestore Persistence
+        await GCP.Firestore.addDoc(incidentData);
+        
+        AppState.results = incidentData;
+        updateUI(incidentData);
 
     } catch (err) {
         console.error("Lighthouse_Fault:", err);
@@ -236,16 +253,47 @@ async function runBridge(manualText = "") {
 }
 
 /**
+ * Updates the Live Activity Feed from Firestore Snapshots.
+ * @param {Array} incidents - List of synced incident documents.
+ */
+function updateLiveFeed(incidents) {
+    const feed = document.getElementById('liveFeed');
+    if (!feed) return;
+
+    if (incidents.length === 0) {
+        feed.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.8rem; text-align: center; padding: 1rem;">Waiting for incident pulses...</p>';
+        return;
+    }
+
+    feed.innerHTML = incidents.slice(0, 3).map(inc => `
+        <div class="feed-item" role="article" aria-label="Incident: ${inc.title}">
+            <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                <span style="font-size:0.75rem; font-weight:700;">${inc.title}</span>
+                <span style="font-size:0.65rem; color:var(--text-secondary)">${inc.inputType} • ${inc.priority}</span>
+            </div>
+            ${inc.signedUrl ? `<a href="${inc.signedUrl}" target="_blank" style="font-size:0.6rem; color:var(--accent-primary);" aria-label="View Secure Evidence">FILE</a>` : ''}
+        </div>
+    `).join('');
+    
+    const syncStatus = document.getElementById('syncStatus');
+    if(syncStatus) syncStatus.textContent = `Synced: ${new Date().toLocaleTimeString()}`;
+}
+
+/**
  * Updates the Dashboard with AI insights.
  * @param {object} data - The Gemini JSON response.
  */
 function updateUI(data) {
     EL.resTitle().textContent = data.title;
     
-    const metaStr = `Source: ${data.inputType || 'Multimodal'} | Status: ${data.verification_status || 'Verified'}`;
+    // Logic for GCS Evidence link
+    let metaStr = `Source: ${data.inputType || 'Multimodal'} | Status: ${data.verification_status || 'Verified'}`;
     const resMeta = EL.resMeta();
     if(resMeta) {
-        resMeta.textContent = metaStr;
+        resMeta.innerHTML = metaStr;
+        if (data.signedUrl) {
+            resMeta.innerHTML += ` | <a href="${data.signedUrl}" target="_blank" style="color:var(--accent-primary); text-decoration: underline;">Secure Evidence</a>`;
+        }
         resMeta.style.color = "var(--success)";
     }
 
@@ -355,6 +403,9 @@ function init() {
         const isSimple = document.body.classList.toggle('simple-ui');
         EL.toggleSimpleUI().setAttribute('aria-pressed', isSimple);
     });
+
+    // Cloud Real-time Persistence (Firestore)
+    GCP.Firestore.onSnapshot(updateLiveFeed);
 }
 
 // Auto-init logic
