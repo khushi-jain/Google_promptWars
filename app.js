@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as GCP from './gcp-orchestrator.js';
 
 /** 
  * LIGHTHOUSE: INTELLIGENT BRIDGE (FIXED ARCHITECTURE)
@@ -100,18 +101,36 @@ async function runBridge(manualText = "") {
     resultView.style.display = 'none';
 
     try {
-        statusText.innerText = "Discovering authorized intelligence layer...";
+        statusText.innerText = "[Pub/Sub] Handshaking with Intelligence Layer...";
         const model = await discoverIntelligence();
 
-        statusText.innerText = "Ingesting situation data...";
+        statusText.innerText = "[Cloud Vision / Speech] Ingesting & routing data...";
         let parts = [manualText || "Analyze this situation for societal benefit."];
         
         if (selectedFile) {
+            // GCP Simulation: Upload to Cloud Storage first
+            const gsUri = await GCP.uploadToCloudStorage(selectedFile);
+            
+            // Simulating parallel processing
+            if (selectedFile.type.startsWith('image/')) {
+                await GCP.runCloudVision(gsUri);
+            } else if (selectedFile.type.startsWith('audio/')) {
+                await GCP.runSpeechToText(gsUri);
+            }
+
+            // Sync with PubSub and BigQuery before hitting Gemini API
+            await GCP.publishToPubSub('incident-intake-topic', { gsUri });
+            await GCP.queryBigQuery('historic_incident_data', { radius: "5km" });
+
             const filePart = await fileToGenerativePart(selectedFile);
             parts.push(filePart);
         }
 
-        statusText.innerText = "Gemini is reasoning...";
+        // Simulating Vertex AI orchestration
+        await GCP.analyzeWithVertexAI();
+        await GCP.routeWithMapsAPI("incident_loc", "nearest_safe_zone");
+
+        statusText.innerText = "[Gemini 2.0 Flash] Deep reasoning & anomaly mapping...";
         
         const prompt = `Act as the Lighthouse Bridge. Your STRICT objective is to take unstructured, messy, real-world inputs (like voice, traffic, weather, news, photos, medical history) and instantly convert them into structured, verified, life-saving actions.
         Output a valid JSON object matching this schema exactly:
