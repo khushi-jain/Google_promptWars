@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighthouse | Universal Bridge for Societal Benefit</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
+    }
+    </script>
+    
+    <!-- Lucide Icons for premium feel -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="glow-spot"></div>
+    <div class="app-container">
+        <header>
+            <h1 class="logo">LIGHTHOUSE</h1>
+            <p class="subtitle">Bridging Human Intent & Complex Systems</p>
+        </header>
+
+        <main class="dashboard">
+            <!-- Sidebar: Module Simulators -->
+            <aside class="sidebar glass-card">
+                <h3 style="margin-bottom: 1.5rem; font-size: 0.9rem; text-transform: uppercase; color: var(--text-secondary);">Select Scenario</h3>
+                <div id="moduleList">
+                    <div class="module-item active" data-module="medical">
+                        <div class="icon-box"><i data-lucide="heart-pulse"></i></div>
+                        <span>Medical Emergency</span>
+                    </div>
+                    <div class="module-item" data-module="roadside">
+                        <div class="icon-box"><i data-lucide="car"></i></div>
+                        <span>Roadside Assist</span>
+                    </div>
+                    <div class="module-item" data-module="women">
+                        <div class="icon-box"><i data-lucide="shield-check"></i></div>
+                        <span>Women Helpline</span>
+                    </div>
+                    <div class="module-item" data-module="traffic">
+                        <div class="icon-box"><i data-lucide="map-pin"></i></div>
+                        <span>Smart Transit</span>
+                    </div>
+                    <div class="module-item" data-module="disaster">
+                        <div class="icon-box"><i data-lucide="cloud-lightning"></i></div>
+                        <span>Disaster Action</span>
+                    </div>
+                    <div class="module-item" data-module="civic">
+                        <div class="icon-box"><i data-lucide="megaphone"></i></div>
+                        <span>Civic Complaint</span>
+                    </div>
+                </div>
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--glass-border);">
+                    <small style="color: var(--text-secondary); line-height: 1.4; display: block;">
+                        <b>Pro Tip:</b> Drag a photo or voice note into the center to trigger the Bridge.
+                    </small>
+                </div>
+            </aside>
+
+            <!-- Main Workspace -->
+            <section class="main-view">
+                <!-- Input Zone -->
+                <div class="glass-card input-zone" id="dropZone">
+                    <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--accent-primary);">
+                        <i data-lucide="upload-cloud"></i>
+                    </div>
+                    <h2 style="margin-bottom: 0.5rem;">Universal Action Input</h2>
+                    <p style="color: var(--text-secondary);">Upload image, audio, or type your intent...</p>
+                    <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+                        <button class="btn btn-primary" id="btnAnalyze">Analyze Scenario</button>
+                        <button class="btn btn-secondary">Use Microphone</button>
+                    </div>
+                </div>
+
+                <!-- Process State (Hidden by default) -->
+                <div id="processing" style="display: none; text-align: center; padding: 3rem;">
+                    <div class="pulse-loader"></div>
+                    <h3 style="margin-top: 1.5rem;">Reasoning with Gemini...</h3>
+                    <p style="color: var(--text-secondary);">Connecting patterns to systems</p>
+                </div>
+
+                <!-- Result View (Hidden by default) -->
+                <div id="resultView" class="result-container" style="display: none;">
+                    <div class="glass-card">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+                            <div>
+                                <h2 id="resTitle" style="color: var(--accent-primary);">Detected Intent: Serious Injury</h2>
+                                <p id="resMeta" style="color: var(--text-secondary); font-size: 0.9rem;">Model: Gemini 1.5 Flash | Confidence: 98%</p>
+                            </div>
+                            <span id="resBadge" class="status-badge badge-urgent">Priority: High</span>
+                        </div>
+                        
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 1.5rem;">
+                            <h4 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i data-lucide="cpu" style="width: 18px;"></i> System Reasoning
+                            </h4>
+                            <p id="resReasoning" style="font-size: 0.95rem; line-height: 1.6;">
+                                Multimodal analysis confirms a level 2 trauma scenario. Correlating visual depth of laceration with voice-detected respiratory distress.
+                            </p>
+                        </div>
+
+                        <div id="actionGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <!-- Dynamic Actions go here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Extra Styles for Dynamic UI -->
+    <style>
+        #processing {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pulse-loader {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+            box-shadow: 0 0 40px var(--accent-primary);
+            animation: pulse 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .pulse-loader::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: ring 1.2s infinite ease-out;
+        }
+
+        @keyframes ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 1; filter: brightness(1.2); }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+    </style>
+
+    <input type="file" id="fileInput" style="display: none;" accept="image/*,audio/*">
+    <script type="module" src="app.js"></script>
+    <script>
+        // Init Lucide
+        lucide.createIcons();
+    </script>
+</body>
+</html>
