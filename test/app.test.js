@@ -50,6 +50,8 @@ describe('Lighthouse Bridge App', () => {
     it('updateUI() updates DOM elements correctly based on JSON payload', () => {
         const mockData = {
             title: "Test Intent Found",
+            inputType: "Traffic Payload",
+            verification_status: "Verified Action",
             reasoning: "Test Reasoning Analysis provided by mock data.",
             priority: "Critical",
             badgeClass: "badge-urgent",
@@ -65,6 +67,11 @@ describe('Lighthouse Bridge App', () => {
         // Assertions
         expect(document.getElementById('resTitle').textContent).toBe("Test Intent Found");
         expect(document.getElementById('resReasoning').textContent).toBe("Test Reasoning Analysis provided by mock data.");
+        
+        // Problem Statement Alignment Assertion
+        const resMeta = document.getElementById('resMeta');
+        expect(resMeta.textContent).toContain("Source: Traffic Payload");
+        expect(resMeta.textContent).toContain("Status: Verified Action");
         
         const badge = document.getElementById('resBadge');
         expect(badge.textContent).toBe("Priority: Critical");

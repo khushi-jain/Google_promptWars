@@ -28,31 +28,42 @@
         <main class="dashboard">
             <!-- Sidebar: Module Simulators -->
             <aside class="sidebar glass-card">
-                <h3 style="margin-bottom: 1.5rem; font-size: 0.9rem; text-transform: uppercase; color: var(--text-secondary);">Select Scenario</h3>
+                <h3 style="margin-bottom: 1.5rem; font-size: 0.9rem; text-transform: uppercase; color: var(--text-secondary);">Messy Input Simulators</h3>
                 <div id="moduleList">
                     <div class="module-item active" data-module="medical">
                         <div class="icon-box"><i data-lucide="heart-pulse"></i></div>
-                        <span>Medical Emergency</span>
+                        <div style="display:flex; flex-direction: column;">
+                            <span>Medical History PDFs</span>
+                            <small style="font-size: 0.65rem; color:var(--text-secondary)">Raw hospital records</small>
+                        </div>
                     </div>
                     <div class="module-item" data-module="roadside">
-                        <div class="icon-box"><i data-lucide="car"></i></div>
-                        <span>Roadside Assist</span>
+                        <div class="icon-box"><i data-lucide="mic"></i></div>
+                        <div style="display:flex; flex-direction: column;">
+                            <span>Voice Emergency</span>
+                            <small style="font-size: 0.65rem; color:var(--text-secondary)">Panicked audio transcripts</small>
+                        </div>
                     </div>
                     <div class="module-item" data-module="women">
-                        <div class="icon-box"><i data-lucide="shield-check"></i></div>
-                        <span>Women Helpline</span>
+                        <div class="icon-box"><i data-lucide="camera"></i></div>
+                        <div style="display:flex; flex-direction: column;">
+                            <span>Photo Evidence</span>
+                            <small style="font-size: 0.65rem; color:var(--text-secondary)">Unstructured imagery</small>
+                        </div>
                     </div>
                     <div class="module-item" data-module="traffic">
                         <div class="icon-box"><i data-lucide="map-pin"></i></div>
-                        <span>Smart Transit</span>
+                        <div style="display:flex; flex-direction: column;">
+                            <span>Traffic API Dumps</span>
+                            <small style="font-size: 0.65rem; color:var(--text-secondary)">Raw gridlock JSON nodes</small>
+                        </div>
                     </div>
                     <div class="module-item" data-module="disaster">
                         <div class="icon-box"><i data-lucide="cloud-lightning"></i></div>
-                        <span>Disaster Action</span>
-                    </div>
-                    <div class="module-item" data-module="civic">
-                        <div class="icon-box"><i data-lucide="megaphone"></i></div>
-                        <span>Civic Complaint</span>
+                        <div style="display:flex; flex-direction: column;">
+                            <span>Weather / News</span>
+                            <small style="font-size: 0.65rem; color:var(--text-secondary)">RSS streams & doppler scans</small>
+                        </div>
                     </div>
                 </div>
                 <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--glass-border);">

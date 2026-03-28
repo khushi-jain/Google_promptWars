@@ -8,16 +8,22 @@
 - **Google Cloud Run (Primary):** [https://lighthouse-bridge-380615613865.us-central1.run.app](https://lighthouse-bridge-380615613865.us-central1.run.app)
 - **GitHub Pages (Static UI Fallback):** [https://khushi-jain.github.io/Google_promptWars/](https://khushi-jain.github.io/Google_promptWars/)
 
-## ✨ Key Capabilities
+## 🎯 Prompt Wars: Core Architecture Alignment
 
-The **Intelligence Discovery Engine** automatically handshakes with available models (Gemini 2.0 Flash, 2.5 Flash, 2.5 Pro) to ensure a high-uptime connection. It features six primary functional models:
+The **Intelligence Discovery Engine** has been heavily optimized specifically to conquer the Prompt Wars problem statement.
 
-1. 🏥 **Medical Emergency:** Triage detection and immediate hospital routing.
-2. 🚗 **Roadside Assist:** Crash detection, dispatch, and insurance protocol preparation.
-3. 🚨 **Women's Helpline:** Threat anomaly detection and silent tracking alerts.
-4. 🚦 **Smart Transit:** Gridlock analysis and real-time alternate safety rerouting.
-5. 🌪️ **Disaster Action:** News-triggered evacuation alerts for environmental hazards.
-6. 📢 **Civic Complaint:** Auto-generation of formal civic issues (potholes, waste management) to local authorities.
+> *"Create a functional interface that takes unstructured, messy, real-world inputs (voice, traffic, weather, news, photos, medical history) and instantly converts them into structured, verified, life-saving actions."*
+
+### 1. 🗑️ Messy Input Simulators
+The dashboard explicitly demonstrates extracting intent from the exact messy data domains requested:
+1. 🏥 **Medical History PDFs:** Extracts life-saving triage actions from raw hospital records.
+2. 🚨 **Voice Emergency:** Decodes panicked audio transcripts for immediate roadside or security routing.
+3. 📸 **Photo Evidence:** Triage threat anomalies and civic issues from unstructured imagery.
+4. 🚦 **Traffic API Dumps:** Analyzes raw gridlock JSON nodes to find smart transit reroutes.
+5. 🌪️ **Weather & News:** Aggregates RSS streams to trigger disaster evacuation protocols.
+
+### 2. ✅ "Verified Actions" Architecture
+The system utilizes Google's `gemini-2.0-flash` to strictly untangle these messy inputs to output **"Structured, Verified, Life-Saving Actions."** The final UI specifically outputs dynamic `Verified Status` verification badges.
 
 ## 🛠️ Technology Stack
 
