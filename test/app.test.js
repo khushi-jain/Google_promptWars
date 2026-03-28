@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { updateUI, resetUI, fileToBase64, runBridge, init } from '../app.js';
+import { updateUI, resetUI, FileUtil, runBridge, init } from '../app.js';
 
 // Mock Lucide icons
 global.lucide = { createIcons: vi.fn() };
 
-// Mock individual GCP orchestrator functions since they are imported as *
+// Mock individual GCP orchestrator functions
 vi.mock('../gcp-orchestrator.js', () => ({
     uploadToCloudStorage: vi.fn(() => Promise.resolve('gs://mock')),
     runCloudVision: vi.fn(() => Promise.resolve()),
@@ -22,6 +22,7 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
     
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.useFakeTimers();
         
         // Refresh DOM from original index.html
         const html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8');
@@ -69,17 +70,19 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
         expect(document.getElementById('resultView').style.display).toBe('block');
     });
 
-    it('fileToBase64() converts a file to pure base64 data', async () => {
+    it('FileUtil.toBase64() converts a file to pure base64 data', async () => {
+        vi.useRealTimers(); // FileReader needs real event loop
         const blob = new Blob(['fake image data'], { type: 'image/png' });
         const file = new File([blob], 'test.png', { type: 'image/png' });
         
-        const actual = await fileToBase64(file);
+        const actual = await FileUtil.toBase64(file);
         
         expect(actual.mimeType).toBe('image/png');
         expect(actual.data).toBeDefined(); 
     });
 
     it('runBridge() calls the secure backend /api/analyze endpoint', async () => {
+        vi.useRealTimers();
         const mockResponse = {
             title: "Backend Response",
             module: "medical",
@@ -105,6 +108,7 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
     });
 
     it('updateUI() populates srSummary and triggers speech synthesis for blind support', () => {
+        vi.useFakeTimers();
         const mockSpeech = vi.fn();
         global.speechSynthesis = {
             speak: mockSpeech,
@@ -126,7 +130,11 @@ describe('Lighthouse Bridge App (Secure Architecture)', () => {
         const srSummary = document.getElementById('srSummary');
         expect(srSummary.textContent).toContain("Emergency Found");
         expect(srSummary.textContent).toContain("Reasoning detail");
+        
+        // Account for 300ms debounce
+        vi.advanceTimersByTime(350);
         expect(mockSpeech).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 
     it('language selector updates button text', () => {

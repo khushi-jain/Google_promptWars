@@ -2,33 +2,54 @@ const express = require('express');
 const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+/**
+ * LIGHTHOUSE: INTELLIGENT BRIDGE (ENTERPRISE BACKEND)
+ * Secure, resilient, and optimized for societal benefit.
+ */
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Security Middlewares
-// 1. Helmet sets secure HTTP headers. (Disabled strict CSP for local Vite/CDN compatibility).
-app.use(helmet({ contentSecurityPolicy: false })); 
-
-// 2. CORS prevents cross-origin requests from scraping the API.
-app.use(cors());
-
-// 3. Payload size up to 20MB for large base64 strings.
+// Performance & Security Middlewares
+app.use(compression()); // Gzip compression to optimize for low-bandwidth users
+app.use(helmet({ contentSecurityPolicy: false })); // Secure HTTP headers
+app.use(cors()); // Cross-origin resource sharing control
 app.use(express.json({ limit: '20mb' })); 
 
-// 4. Rate Limiting: Prevent DDoS / Billing Spikes. Max 30 requests per 10 minutes.
+// Rate Limiting: Prevent DDoS / Billing Spikes.
 const apiLimiter = rateLimit({
-    windowMs: 10 * 60 * 1000,
-    max: 30,
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 50,
     message: { error: 'GCP Rate Limit Exceeded. Please try again later.' }
 });
 
-// Initialize Gemini backend (Secured by Cloud Run env variable)
+// Initialize Gemini backend (Secured via environment)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSy_MOCK_ENV");
 
-// The single, secured execution pipeline for Lighthouse inference.
+/**
+ * Resilient content generation with retry logic.
+ * Handles transient network issues in disaster/off-grid scenarios.
+ */
+async function generateWithRetry(model, parts, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const result = await model.generateContent(parts);
+            return result.response.text();
+        } catch (err) {
+            console.warn(`Gemini API Call Attempt ${i + 1} failed. Retrying...`, err.message);
+            if (i === retries - 1) throw err;
+            await new Promise(res => setTimeout(res, 1000 * Math.pow(2, i))); // Exponential backoff
+        }
+    }
+}
+
+/**
+ * MAIN API: Unified Intelligent Bridge Analysis
+ */
 app.post('/api/analyze', apiLimiter, async (req, res) => {
     try {
         const { manualText, fileData, mimeType, lang } = req.body;
@@ -49,7 +70,7 @@ app.post('/api/analyze', apiLimiter, async (req, res) => {
         const prompt = `Act as the Lighthouse Bridge. AI Objective: Structured, verified, life-saving outcomes from messy data.
         Language Requirements: Respond ENTIRELY in ${targetLang}.
         Accessibility Requirements: Provide a "summary" for screen readers and "aria_label" for each action.
-        Output valid JSON matching this schema exactly:
+        Output MUST be pure JSON matching this schema:
         {
             "title": "Clear Action Summary",
             "inputType": "Source classification",
@@ -61,29 +82,27 @@ app.post('/api/analyze', apiLimiter, async (req, res) => {
             "actions": [{"icon": "lucide_name", "label": "label", "desc": "detail", "aria_label": "Detailed descriptive label for blind users"}]
         }`;
 
-        const result = await model.generateContent([prompt, ...parts]);
-        const responseText = result.response.text();
+        const responseText = await generateWithRetry(model, [prompt, ...parts]);
         
-        // Pure extraction algorithm for safety
+        // Extract JSON block safely
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error("INTELLIGENCE_PAYLOAD_ERROR: Invalid JSON response.");
+        if (!jsonMatch) throw new Error("INTELLIGENCE_PAYLOAD_ERROR: Invalid AI response.");
         
-        const data = JSON.parse(jsonMatch[0]);
-        res.json(data);
+        res.json(JSON.parse(jsonMatch[0]));
     } catch (err) {
-        console.error("Backend Intelligence Error:", err);
-        res.status(500).json({ error: err.message || "Failed to parse intelligence request natively." });
+        console.error("Backend_Fault:", err);
+        res.status(500).json({ error: "Intelligence Pipeline Anomaly. Our engineers are tracking the fault." });
     }
 });
 
 // Serve static files from root
 app.use(express.static(path.join(__dirname)));
 
-// Fallback to index.html
+// Fallback to index.html (SPA routing)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
-    console.log(`Lighthouse Bridge (Secure Mode) live on port ${PORT}`);
+    console.log(`Lighthouse Bridge live on port ${PORT} (Resilient Mode)`);
 });
